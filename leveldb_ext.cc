@@ -7,8 +7,8 @@
 
 static PyMethodDef leveldb_extension_methods[] =
 {
-	{ (char*)"RepairDB",  (PyCFunction)pyleveldb_repair_db,  METH_VARARGS | METH_KEYWORDS, (char*)pyleveldb_repair_db_doc  },
-	{ (char*)"DestroyDB", (PyCFunction)pyleveldb_destroy_db, METH_VARARGS, (char*)pyleveldb_destroy_db_doc },
+	{ (char*)"repair_db",  (PyCFunction)plyvel_repair_db,  METH_VARARGS | METH_KEYWORDS, (char*)plyvel_repair_db_doc  },
+	{ (char*)"destroy_db", (PyCFunction)plyvel_destroy_db, METH_VARARGS, (char*)plyvel_destroy_db_doc },
 	{NULL, NULL},
 };
 
@@ -31,7 +31,7 @@ static int leveldb_extension_clear(PyObject* m)
 
 static struct PyModuleDef leveldb_extension_def = {
 	PyModuleDef_HEAD_INIT,
-	"leveldb",
+	"plyvel",
 	NULL,
 	sizeof(struct leveldb_extension_state),
 	leveldb_extension_methods,
@@ -43,83 +43,83 @@ static struct PyModuleDef leveldb_extension_def = {
 
 #define INITERROR return NULL
 
-extern "C" PyObject* PyInit_leveldb(void)
+extern "C" PyObject* PyInit_plyvel(void)
 
 #else
 
 #define INITERROR return
 
-extern "C" void initleveldb(void)
+extern "C" void initplyvel(void)
 
 #endif
 {
 #if PY_MAJOR_VERSION >= 3
-	PyObject* leveldb_module = PyModule_Create(&leveldb_extension_def);
+	PyObject* plyvel_module = PyModule_Create(&leveldb_extension_def);
 #else
-	PyObject* leveldb_module = Py_InitModule3((char*)"leveldb", leveldb_extension_methods, 0);
+	PyObject* plyvel_module = Py_InitModule3((char*)"plyvel", leveldb_extension_methods, 0);
 #endif
 
-	if (leveldb_module == 0)
+	if (plyvel_module == 0)
 		INITERROR;
 
 	// add custom exception
-	leveldb_exception = PyErr_NewException((char*)"leveldb.LevelDBError", 0, 0);
+	leveldb_exception = PyErr_NewException((char*)"plyvel.Error", 0, 0);
 
 	if (leveldb_exception == 0) {
-		Py_DECREF(leveldb_module);
+		Py_DECREF(plyvel_module);
 		INITERROR;
 	}
 
-	if (PyModule_AddObject(leveldb_module, (char*)"LevelDBError", leveldb_exception) != 0) {
-		Py_DECREF(leveldb_module);
+	if (PyModule_AddObject(plyvel_module, (char*)"Error", leveldb_exception) != 0) {
+		Py_DECREF(plyvel_module);
 		INITERROR;
 	}
 
-	if (PyType_Ready(&PyLevelDB_Type) < 0) {
-		Py_DECREF(leveldb_module);
+	if (PyType_Ready(&Plyvel_Type) < 0) {
+		Py_DECREF(plyvel_module);
 		INITERROR;
 	}
 
-	if (PyType_Ready(&PyLevelDBSnapshot_Type) < 0) {
-		Py_DECREF(leveldb_module);
+	if (PyType_Ready(&PlyvelSnapshot_Type) < 0) {
+		Py_DECREF(plyvel_module);
 		INITERROR;
 	}
 
 	if (PyType_Ready(&PyWriteBatch_Type) < 0) {
-		Py_DECREF(leveldb_module);
+		Py_DECREF(plyvel_module);
 		INITERROR;
 	}
 
-	if (PyType_Ready(&PyLevelDBIter_Type) < 0) {
-		Py_DECREF(leveldb_module);
+	if (PyType_Ready(&PlyvelIter_Type) < 0) {
+		Py_DECREF(plyvel_module);
 		INITERROR;
 	}
 
 	// add custom types to the different modules
-	Py_INCREF(&PyLevelDB_Type);
+	Py_INCREF(&Plyvel_Type);
 
-	if (PyModule_AddObject(leveldb_module, (char*)"LevelDB", (PyObject*)&PyLevelDB_Type) != 0) {
-		Py_DECREF(leveldb_module);
+	if (PyModule_AddObject(plyvel_module, (char*)"DB", (PyObject*)&Plyvel_Type) != 0) {
+		Py_DECREF(plyvel_module);
 		INITERROR;
 	}
 
-	Py_INCREF(&PyLevelDBSnapshot_Type);
+	Py_INCREF(&PlyvelSnapshot_Type);
 
-	if (PyModule_AddObject(leveldb_module, (char*)"Snapshot", (PyObject*)&PyLevelDBSnapshot_Type) != 0) {
-		Py_DECREF(leveldb_module);
+	if (PyModule_AddObject(plyvel_module, (char*)"Snapshot", (PyObject*)&PlyvelSnapshot_Type) != 0) {
+		Py_DECREF(plyvel_module);
 		INITERROR;
 	}
 
 	Py_INCREF(&PyWriteBatch_Type);
 
-	if (PyModule_AddObject(leveldb_module, (char*)"WriteBatch", (PyObject*)&PyWriteBatch_Type) != 0) {
-		Py_DECREF(leveldb_module);
+	if (PyModule_AddObject(plyvel_module, (char*)"WriteBatch", (PyObject*)&PyWriteBatch_Type) != 0) {
+		Py_DECREF(plyvel_module);
 		INITERROR;
 	}
 
 	PyEval_InitThreads();
 
 #if PY_MAJOR_VERSION >= 3
-	return leveldb_module;
+	return plyvel_module;
 #endif
 }

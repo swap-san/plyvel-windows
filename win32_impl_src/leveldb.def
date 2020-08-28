@@ -1,8 +1,8 @@
-LIBRARY "leveldb.pyd"
+LIBRARY "plyvel.pyd"
 
 EXPORTS 
 
-initleveldb
+PyInit_plyvel
 
 leveldb_open
 

@@ -1,8 +1,8 @@
 // Copyright (c) Arni Mar Jonsson.
 // See LICENSE for details.
 
-#ifndef __LEVELDB__MODULE__H__
-#define __LEVELDB__MODULE__H__
+#ifndef __PLYVEL__MODULE__H__
+#define __PLYVEL__MODULE__H__
 
 extern "C" {
 #include <Python.h>
@@ -36,17 +36,17 @@ typedef struct {
 
 	// number of open iterators, associated with LevelDB object
 	int n_iterators;
-} PyLevelDB;
+} Plyvel;
 
 typedef struct {
 	PyObject_HEAD
 
 		// the associated LevelDB object
-		PyLevelDB* db;
+		Plyvel* db;
 
 	// the snapshot
 	const leveldb::Snapshot* snapshot;
-} PyLevelDBSnapshot;
+} PlyvelSnapshot;
 
 typedef struct {
 	PyObject_HEAD
@@ -55,7 +55,7 @@ typedef struct {
 		PyObject* ref;
 
 	// the associated db object
-	PyLevelDB* db;
+	Plyvel* db;
 
 	// the iterator
 	leveldb::Iterator* iterator;
@@ -68,7 +68,7 @@ typedef struct {
 
 	// if 1: return (k, v) 2-tuples, otherwise just k
 	int include_value;
-} PyLevelDBIter;
+} PlyvelIter;
 
 typedef struct {
 	bool is_put;
@@ -82,23 +82,23 @@ typedef struct {
 } PyWriteBatch;
 
 // custom types
-extern PyTypeObject PyLevelDB_Type;
-extern PyTypeObject PyLevelDBSnapshot_Type;
+extern PyTypeObject Plyvel_Type;
+extern PyTypeObject PlyvelSnapshot_Type;
 extern PyTypeObject PyWriteBatch_Type;
-extern PyTypeObject PyLevelDBIter_Type;
+extern PyTypeObject PlyvelIter_Type;
 
-#define PyLevelDB_Check(op) PyObject_TypeCheck(op, &PyLevelDB_Type)
-#define PyLevelDBSnapshotCheck(op) PyObject_TypeCheck(op, &PyLevelDBSnapshot_Type)
+#define Plyvel_Check(op) PyObject_TypeCheck(op, &Plyvel_Type)
+#define PlyvelSnapshotCheck(op) PyObject_TypeCheck(op, &PlyvelSnapshot_Type)
 #define PyWriteBatch_Check(op) PyObject_TypeCheck(op, &PyWriteBatch_Type)
 
 extern PyObject* leveldb_exception;
 
-extern const char pyleveldb_repair_db_doc[];
-extern const char pyleveldb_destroy_db_doc[];
+extern const char plyvel_repair_db_doc[];
+extern const char plyvel_destroy_db_doc[];
 
-extern PyObject* pyleveldb_repair_db(PyLevelDB* self, PyObject* args, PyObject* kwds);
-extern PyObject* pyleveldb_destroy_db(PyObject* self, PyObject* args);
+extern PyObject* plyvel_repair_db(Plyvel* self, PyObject* args, PyObject* kwds);
+extern PyObject* plyvel_destroy_db(PyObject* self, PyObject* args);
 
-extern "C" void initleveldb(void);
+extern "C" void initplyvel(void);
 
 #endif

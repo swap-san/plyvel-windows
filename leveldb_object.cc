@@ -5,18 +5,18 @@
 
 #include <leveldb/comparator.h>
 
-static PyObject* PyLevelDBIter_New(PyObject* ref, PyLevelDB* db, leveldb::Iterator* iterator, std::string* bound, int include_value, int is_reverse);
-static PyObject* PyLevelDBSnapshot_New(PyLevelDB* db, const leveldb::Snapshot* snapshot);
+static PyObject* PlyvelIter_New(PyObject* ref, Plyvel* db, leveldb::Iterator* iterator, std::string* bound, int include_value, int is_reverse);
+static PyObject* PlyvelSnapshot_New(Plyvel* db, const leveldb::Snapshot* snapshot);
 
-static void PyLevelDB_set_error(leveldb::Status& status)
+static void Plyvel_set_error(leveldb::Status& status)
 {
 	PyErr_SetString(leveldb_exception, status.ToString().c_str());
 }
 
-const char pyleveldb_destroy_db_doc[] =
+const char plyvel_destroy_db_doc[] =
 	"leveldb.DestroyDB(db_dir)\n\nAttempts to recover as much data as possible from a corrupt database."
 	;
-PyObject* pyleveldb_destroy_db(PyObject* self, PyObject* args)
+PyObject* plyvel_destroy_db(PyObject* self, PyObject* args)
 {
 	const char* db_dir = 0;
 
@@ -32,7 +32,7 @@ PyObject* pyleveldb_destroy_db(PyObject* self, PyObject* args)
 	Py_END_ALLOW_THREADS
 
 		if (!status.ok()) {
-			PyLevelDB_set_error(status);
+			Plyvel_set_error(status);
 			return 0;
 		}
 
@@ -40,7 +40,7 @@ PyObject* pyleveldb_destroy_db(PyObject* self, PyObject* args)
 		return Py_None;
 }
 
-static void PyLevelDB_dealloc(PyLevelDB* self)
+static void Plyvel_dealloc(Plyvel* self)
 {
 	Py_BEGIN_ALLOW_THREADS
 		delete self->_db;
@@ -66,7 +66,7 @@ static void PyLevelDB_dealloc(PyLevelDB* self)
 #endif
 }
 
-static void PyLevelDBSnapshot_dealloc(PyLevelDBSnapshot* self)
+static void PlyvelSnapshot_dealloc(PlyvelSnapshot* self)
 {
 	if (self->db && self->snapshot) {
 		Py_BEGIN_ALLOW_THREADS
@@ -99,9 +99,9 @@ static void PyWriteBatch_dealloc(PyWriteBatch* self)
 #endif
 }
 
-static PyObject* PyLevelDB_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
+static PyObject* Plyvel_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 {
-	PyLevelDB* self = (PyLevelDB*)type->tp_alloc(type, 0);
+	Plyvel* self = (Plyvel*)type->tp_alloc(type, 0);
 
 	if (self) {
 		self->_db = 0;
@@ -135,9 +135,9 @@ static PyObject* PyWriteBatch_new(PyTypeObject* type, PyObject* args, PyObject* 
 	return (PyObject*)self;
 }
 
-static PyObject* PyLevelDBSnapshot_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
+static PyObject* PlyvelSnapshot_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 {
-	PyLevelDBSnapshot* self = (PyLevelDBSnapshot*)type->tp_alloc(type, 0);
+	PlyvelSnapshot* self = (PlyvelSnapshot*)type->tp_alloc(type, 0);
 
 	if (self) {
 		self->db = 0;
@@ -240,7 +240,7 @@ private:
 	void SetError() const
 	{
 		// we don't do too much
-		fprintf(stderr, "py-leveldb: Python comparison failure. Unable to reliably continue. Goodbye cruel world.\n\n");
+		fprintf(stderr, "plyvel: Python comparison failure. Unable to reliably continue. Goodbye cruel world.\n\n");
 		PyErr_Print();
 		fflush(stderr);
 		abort();
@@ -318,7 +318,7 @@ private:
 };
 
 
-static PyObject* PyLevelDB_Put(PyLevelDB* self, PyObject* args, PyObject* kwds)
+static PyObject* Plyvel_Put(Plyvel* self, PyObject* args, PyObject* kwds)
 {
 	const char* kwargs[] = {"key", "value", "sync", 0};
 	PyObject* sync = Py_False;
@@ -346,7 +346,7 @@ static PyObject* PyLevelDB_Put(PyLevelDB* self, PyObject* args, PyObject* kwds)
 	PY_LEVELDB_RELEASE_BUFFER(value);
 
 	if (!status.ok()) {
-		PyLevelDB_set_error(status);
+		Plyvel_set_error(status);
 		return 0;
 	}
 
@@ -354,7 +354,7 @@ static PyObject* PyLevelDB_Put(PyLevelDB* self, PyObject* args, PyObject* kwds)
 	return Py_None;
 }
 
-static PyObject* PyLevelDB_Get_(PyLevelDB* self, leveldb::DB* db, const leveldb::Snapshot* snapshot, PyObject* args, PyObject* kwds)
+static PyObject* Plyvel_Get_(Plyvel* self, leveldb::DB* db, const leveldb::Snapshot* snapshot, PyObject* args, PyObject* kwds)
 {
 	PyObject* verify_checksums = Py_False;
 	PyObject* fill_cache = Py_True;
@@ -396,24 +396,24 @@ static PyObject* PyLevelDB_Get_(PyLevelDB* self, leveldb::DB* db, const leveldb:
 	}
 
 	if (!status.ok()) {
-		PyLevelDB_set_error(status);
+		Plyvel_set_error(status);
 		return 0;
 	}
 
 	return PY_LEVELDB_STRING_OR_BYTEARRAY(value.c_str(), value.length());
 }
 
-static PyObject* PyLevelDB_Get(PyLevelDB* self, PyObject* args, PyObject* kwds)
+static PyObject* Plyvel_Get(Plyvel* self, PyObject* args, PyObject* kwds)
 {
-	return PyLevelDB_Get_(self, self->_db, 0, args, kwds);
+	return Plyvel_Get_(self, self->_db, 0, args, kwds);
 }
 
-static PyObject* PyLevelDBSnaphot_Get(PyLevelDBSnapshot* self, PyObject* args, PyObject* kwds)
+static PyObject* PlyvelSnaphot_Get(PlyvelSnapshot* self, PyObject* args, PyObject* kwds)
 {
-	return PyLevelDB_Get_(self->db, self->db->_db, self->snapshot, args, kwds);
+	return Plyvel_Get_(self->db, self->db->_db, self->snapshot, args, kwds);
 }
 
-static PyObject* PyLevelDB_Delete(PyLevelDB* self, PyObject* args, PyObject* kwds)
+static PyObject* Plyvel_Delete(Plyvel* self, PyObject* args, PyObject* kwds)
 {
 	PyObject* sync = Py_False;
 	const char* kwargs[] = {"key", "sync", 0};
@@ -439,7 +439,7 @@ static PyObject* PyLevelDB_Delete(PyLevelDB* self, PyObject* args, PyObject* kwd
 		PY_LEVELDB_RELEASE_BUFFER(key);
 
 	if (!status.ok()) {
-		PyLevelDB_set_error(status);
+		Plyvel_set_error(status);
 		return 0;
 	}
 
@@ -500,7 +500,7 @@ static PyObject* PyWriteBatch_Delete(PyWriteBatch* self, PyObject* args)
 	return Py_None;
 }
 
-static PyObject* PyLevelDB_Write(PyLevelDB* self, PyObject* args, PyObject* kwds)
+static PyObject* Plyvel_Write(Plyvel* self, PyObject* args, PyObject* kwds)
 {
 	PyWriteBatch* write_batch = 0;
 	PyObject* sync = Py_False;
@@ -531,7 +531,7 @@ static PyObject* PyLevelDB_Write(PyLevelDB* self, PyObject* args, PyObject* kwds
 	Py_END_ALLOW_THREADS
 
 		if (!status.ok()) {
-			PyLevelDB_set_error(status);
+			Plyvel_set_error(status);
 			return 0;
 		}
 
@@ -539,7 +539,7 @@ static PyObject* PyLevelDB_Write(PyLevelDB* self, PyObject* args, PyObject* kwds
 		return Py_None;
 }
 
-static PyObject* PyLevelDB_RangeIter_(PyLevelDB* self, const leveldb::Snapshot* snapshot, PyObject* args, PyObject* kwds)
+static PyObject* Plyvel_RangeIter_(Plyvel* self, const leveldb::Snapshot* snapshot, PyObject* args, PyObject* kwds)
 {
 	int is_from = 0;
 	int is_to = 0;
@@ -640,7 +640,7 @@ static PyObject* PyLevelDB_RangeIter_(PyLevelDB* self, const leveldb::Snapshot* 
 		Py_BEGIN_ALLOW_THREADS
 			delete iter;
 		Py_END_ALLOW_THREADS
-			return PyLevelDBIter_New(0, 0, 0, 0, 0, 0);
+			return PlyvelIter_New(0, 0, 0, 0, 0, 0);
 	}
 
 	// otherwise, we're good
@@ -666,20 +666,20 @@ static PyObject* PyLevelDB_RangeIter_(PyLevelDB* self, const leveldb::Snapshot* 
 		}
 	}
 
-	return PyLevelDBIter_New((PyObject*)self, self, iter, s, (include_value == Py_True) ? 1 : 0, (is_reverse == Py_True) ? 1 : 0);
+	return PlyvelIter_New((PyObject*)self, self, iter, s, (include_value == Py_True) ? 1 : 0, (is_reverse == Py_True) ? 1 : 0);
 }
 
-static PyObject* PyLevelDB_RangeIter(PyLevelDB* self, PyObject* args, PyObject* kwds)
+static PyObject* Plyvel_RangeIter(Plyvel* self, PyObject* args, PyObject* kwds)
 {
-	return PyLevelDB_RangeIter_(self, 0, args, kwds);
+	return Plyvel_RangeIter_(self, 0, args, kwds);
 }
 
-static PyObject* PyLevelDBSnapshot_RangeIter(PyLevelDBSnapshot* self, PyObject* args, PyObject* kwds)
+static PyObject* PlyvelSnapshot_RangeIter(PlyvelSnapshot* self, PyObject* args, PyObject* kwds)
 {
-	return PyLevelDB_RangeIter_(self->db, self->snapshot, args, kwds);
+	return Plyvel_RangeIter_(self->db, self->snapshot, args, kwds);
 }
 
-static PyObject* PyLevelDB_GetStatus(PyLevelDB* self)
+static PyObject* Plyvel_GetStatus(Plyvel* self)
 {
 	std::string value;
 
@@ -695,14 +695,14 @@ static PyObject* PyLevelDB_GetStatus(PyLevelDB* self)
 #endif
 }
 
-static PyObject* PyLevelDB_CreateSnapshot(PyLevelDB* self)
+static PyObject* Plyvel_CreateSnapshot(Plyvel* self)
 {
 	const leveldb::Snapshot* snapshot = self->_db->GetSnapshot();
 	//! TBD: check for GetSnapshot() failures
-	return PyLevelDBSnapshot_New(self, snapshot);
+	return PlyvelSnapshot_New(self, snapshot);
 }
 
-static PyObject* PyLevelDB_CompactRange(PyLevelDB* self, PyObject* args, PyObject* kwds)
+static PyObject* Plyvel_CompactRange(Plyvel* self, PyObject* args, PyObject* kwds)
 {
 	PyObject* _start = Py_None;
 	PyObject* _end = Py_None;
@@ -757,31 +757,31 @@ static PyObject* PyLevelDB_CompactRange(PyLevelDB* self, PyObject* args, PyObjec
 	return Py_None;
 }
 
-static PyMethodDef PyLevelDB_methods[] = {
-	{(char*)"Put",            (PyCFunction)PyLevelDB_Put,       METH_VARARGS | METH_KEYWORDS, (char*)"add a key/value pair to database, with an optional synchronous disk write" },
-	{(char*)"Get",            (PyCFunction)PyLevelDB_Get,       METH_VARARGS | METH_KEYWORDS, (char*)"get a value from the database" },
-	{(char*)"Delete",         (PyCFunction)PyLevelDB_Delete,    METH_VARARGS | METH_KEYWORDS, (char*)"delete a value in the database" },
-	{(char*)"Write",          (PyCFunction)PyLevelDB_Write,     METH_VARARGS | METH_KEYWORDS, (char*)"apply a write-batch"},
-	{(char*)"RangeIter",      (PyCFunction)PyLevelDB_RangeIter, METH_VARARGS | METH_KEYWORDS, (char*)"key/value range scan"},
-	{(char*)"GetStats",       (PyCFunction)PyLevelDB_GetStatus, METH_VARARGS | METH_NOARGS,   (char*)"get a mapping of all DB statistics"},
-	{(char*)"CreateSnapshot", (PyCFunction)PyLevelDB_CreateSnapshot, METH_NOARGS, (char*)"create a new snapshot from current DB state"},
-	{(char*)"CompactRange", (PyCFunction)PyLevelDB_CompactRange, METH_VARARGS | METH_KEYWORDS, (char*)"Compact keys in the range"},
+static PyMethodDef Plyvel_methods[] = {
+	{(char*)"put",            (PyCFunction)Plyvel_Put,       METH_VARARGS | METH_KEYWORDS, (char*)"add a key/value pair to database, with an optional synchronous disk write" },
+	{(char*)"get",            (PyCFunction)Plyvel_Get,       METH_VARARGS | METH_KEYWORDS, (char*)"get a value from the database" },
+	{(char*)"delete",         (PyCFunction)Plyvel_Delete,    METH_VARARGS | METH_KEYWORDS, (char*)"delete a value in the database" },
+	{(char*)"write",          (PyCFunction)Plyvel_Write,     METH_VARARGS | METH_KEYWORDS, (char*)"apply a write-batch"},
+	{(char*)"range_iter",      (PyCFunction)Plyvel_RangeIter, METH_VARARGS | METH_KEYWORDS, (char*)"key/value range scan"},
+	{(char*)"get_status",       (PyCFunction)Plyvel_GetStatus, METH_NOARGS,   (char*)"get a mapping of all DB statistics"},
+	{(char*)"snapshot", (PyCFunction)Plyvel_CreateSnapshot, METH_NOARGS, (char*)"create a new snapshot from current DB state"},
+	{(char*)"compact_range", (PyCFunction)Plyvel_CompactRange, METH_VARARGS | METH_KEYWORDS, (char*)"Compact keys in the range"},
 	{NULL}
 };
 
 static PyMethodDef PyWriteBatch_methods[] = {
-	{(char*)"Put",    (PyCFunction)PyWriteBatch_Put,    METH_VARARGS, (char*)"add a put op to batch" },
-	{(char*)"Delete", (PyCFunction)PyWriteBatch_Delete, METH_VARARGS, (char*)"add a delete op to batch" },
+	{(char*)"put",    (PyCFunction)PyWriteBatch_Put,    METH_VARARGS, (char*)"add a put op to batch" },
+	{(char*)"delete", (PyCFunction)PyWriteBatch_Delete, METH_VARARGS, (char*)"add a delete op to batch" },
 	{NULL}
 };
 
-static PyMethodDef PyLevelDBSnapshot_methods[] = {
-	{(char*)"Get",       (PyCFunction)PyLevelDBSnaphot_Get,        METH_VARARGS | METH_KEYWORDS, (char*)"get a value from the snapshot" },
-	{(char*)"RangeIter", (PyCFunction)PyLevelDBSnapshot_RangeIter, METH_VARARGS | METH_KEYWORDS, (char*)"key/value range scan"},
+static PyMethodDef PlyvelSnapshot_methods[] = {
+	{(char*)"get",       (PyCFunction)PlyvelSnaphot_Get,        METH_VARARGS | METH_KEYWORDS, (char*)"get a value from the snapshot" },
+	{(char*)"rangeIter", (PyCFunction)PlyvelSnapshot_RangeIter, METH_VARARGS | METH_KEYWORDS, (char*)"key/value range scan"},
 	{NULL}
 };
 
-static int pyleveldb_str_eq(PyObject* p, const char* s)
+static int plyvel_str_eq(PyObject* p, const char* s)
 {
 	// 8-bit string
 #if PY_MAJOR_VERSION < 3
@@ -803,10 +803,10 @@ static int pyleveldb_str_eq(PyObject* p, const char* s)
 	return 0;
 }
 
-static const leveldb::Comparator* pyleveldb_get_comparator(PyObject* comparator)
+static const leveldb::Comparator* plyvel_get_comparator(PyObject* comparator)
 {
 	// default comparator
-	if (comparator == 0 || pyleveldb_str_eq(comparator, "bytewise"))
+	if (comparator == 0 || plyvel_str_eq(comparator, "bytewise"))
 		return leveldb::BytewiseComparator();
 
 	// (name-ascii, python-callable)
@@ -828,10 +828,10 @@ static const leveldb::Comparator* pyleveldb_get_comparator(PyObject* comparator)
 	return c;
 }
 
-const char pyleveldb_repair_db_doc[] =
+const char plyvel_repair_db_doc[] =
 	"leveldb.RepairDB(db_dir)\n\nAttempts to recover as much data as possible from a corrupt database."
 	;
-PyObject* pyleveldb_repair_db(PyLevelDB* self, PyObject* args, PyObject* kwds)
+PyObject* plyvel_repair_db(Plyvel* self, PyObject* args, PyObject* kwds)
 {
 	const char* db_dir = 0;
 
@@ -844,7 +844,7 @@ PyObject* pyleveldb_repair_db(PyLevelDB* self, PyObject* args, PyObject* kwds)
 		return 0;
 
 	// get comparator
-	const leveldb::Comparator* c = pyleveldb_get_comparator(comparator);
+	const leveldb::Comparator* c = plyvel_get_comparator(comparator);
 	if (c == 0) {
 		PyErr_SetString(leveldb_exception, "error loading comparator");
 		return NULL;
@@ -861,7 +861,7 @@ PyObject* pyleveldb_repair_db(PyLevelDB* self, PyObject* args, PyObject* kwds)
 	Py_END_ALLOW_THREADS
 
 		if (!status.ok()) {
-			PyLevelDB_set_error(status);
+			Plyvel_set_error(status);
 			return 0;
 		}
 
@@ -869,7 +869,7 @@ PyObject* pyleveldb_repair_db(PyLevelDB* self, PyObject* args, PyObject* kwds)
 		return Py_None;
 }
 
-static int PyLevelDB_init(PyLevelDB* self, PyObject* args, PyObject* kwds)
+static int Plyvel_init(Plyvel* self, PyObject* args, PyObject* kwds)
 {
 	// cleanup
 	if (self->_db || self->_cache || self->_comparator || self->_options) {
@@ -924,7 +924,7 @@ static int PyLevelDB_init(PyLevelDB* self, PyObject* args, PyObject* kwds)
 	}
 
 	// get comparator
-	const leveldb::Comparator* c = pyleveldb_get_comparator(comparator);
+	const leveldb::Comparator* c = plyvel_get_comparator(comparator);
 
 	if (c == 0)
 		return -1;
@@ -991,7 +991,7 @@ static int PyLevelDB_init(PyLevelDB* self, PyObject* args, PyObject* kwds)
 	Py_END_ALLOW_THREADS
 
 		if (i == -1)
-			PyLevelDB_set_error(status);
+			Plyvel_set_error(status);
 
 	return i;
 }
@@ -1007,7 +1007,7 @@ static int PyWriteBatch_init(PyWriteBatch* self, PyObject* args, PyObject* kwds)
 	return 0;
 }
 
-static int PyLevelDBSnapshot_init(PyLevelDBSnapshot* self, PyObject* args, PyObject* kwds)
+static int PlyvelSnapshot_init(PlyvelSnapshot* self, PyObject* args, PyObject* kwds)
 {
 	if (self->db && self->snapshot) {
 		self->db->n_snapshots -= 1;
@@ -1017,11 +1017,11 @@ static int PyLevelDBSnapshot_init(PyLevelDBSnapshot* self, PyObject* args, PyObj
 
 	self->db = 0;
 	self->snapshot = 0;
-	PyLevelDB* db = 0;
+	Plyvel* db = 0;
 	const leveldb::Snapshot* snapshot;
 	const char* kwargs[] = {"db", 0};
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, (char*)"O!", (char**)kwargs, &PyLevelDB_Type, &db))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, (char*)"O!", (char**)kwargs, &Plyvel_Type, &db))
 		return -1;
 
 	snapshot = db->_db->GetSnapshot();
@@ -1037,13 +1037,13 @@ static int PyLevelDBSnapshot_init(PyLevelDBSnapshot* self, PyObject* args, PyObj
 	return 0;
 }
 
-static int PyLevelDBSnapshot_traverse(PyLevelDBSnapshot* iter, visitproc visit, void* arg)
+static int PlyvelSnapshot_traverse(PlyvelSnapshot* iter, visitproc visit, void* arg)
 {
 	Py_VISIT((PyObject*)iter->db);
 	return 0;
 }
 
-PyDoc_STRVAR(PyLevelDB_doc,
+PyDoc_STRVAR(Plyvel_doc,
 			 "LevelDB(filename, **kwargs) -> leveldb object\n"
 			 "\n"
 			 "Open a LevelDB database, from the given directory.\n"
@@ -1113,19 +1113,19 @@ PyDoc_STRVAR(PyWriteBatch_doc,
 			 "    key: the key\n"
 			 );
 
-PyDoc_STRVAR(PyLevelDBSnapshot_doc, "");
+PyDoc_STRVAR(PlyvelSnapshot_doc, "");
 
-PyTypeObject PyLevelDB_Type = {
+PyTypeObject Plyvel_Type = {
 #if PY_MAJOR_VERSION >= 3
 	PyVarObject_HEAD_INIT(NULL, 0)
 #else
 	PyObject_HEAD_INIT(NULL)
 	0,
 #endif
-	(char*)"leveldb.LevelDB",      /*tp_name*/
-	sizeof(PyLevelDB),             /*tp_basicsize*/
+	(char*)"plyvel._plyvel.DB",      /*tp_name*/
+	sizeof(Plyvel),             /*tp_basicsize*/
 	0,                             /*tp_itemsize*/
-	(destructor)PyLevelDB_dealloc, /*tp_dealloc*/
+	(destructor)Plyvel_dealloc, /*tp_dealloc*/
 	0,                             /*tp_print*/
 	0,                             /*tp_getattr*/
 	0,                             /*tp_setattr*/
@@ -1141,14 +1141,14 @@ PyTypeObject PyLevelDB_Type = {
 	0,                             /*tp_setattro*/
 	0,                             /*tp_as_buffer*/
 	Py_TPFLAGS_DEFAULT,            /*tp_flags*/
-	(char*)PyLevelDB_doc,          /*tp_doc */
+	(char*)Plyvel_doc,          /*tp_doc */
 	0,                             /*tp_traverse */
 	0,                             /*tp_clear */
 	0,                             /*tp_richcompare */
 	0,                             /*tp_weaklistoffset */
 	0,                             /*tp_iter */
 	0,                             /*tp_iternext */
-	PyLevelDB_methods,             /*tp_methods */
+	Plyvel_methods,             /*tp_methods */
 	0,                             /*tp_members */
 	0,                             /*tp_getset */
 	0,                             /*tp_base */
@@ -1156,9 +1156,9 @@ PyTypeObject PyLevelDB_Type = {
 	0,                             /*tp_descr_get */
 	0,                             /*tp_descr_set */
 	0,                             /*tp_dictoffset */
-	(initproc)PyLevelDB_init,      /*tp_init */
+	(initproc)Plyvel_init,      /*tp_init */
 	0,                             /*tp_alloc */
-	PyLevelDB_new,                 /*tp_new */
+	Plyvel_new,                 /*tp_new */
 };
 
 
@@ -1169,7 +1169,7 @@ PyTypeObject PyWriteBatch_Type = {
 	PyObject_HEAD_INIT(NULL)
 	0,
 #endif
-	(char*)"leveldb.WriteBatch",      /*tp_name*/
+	(char*)"plyvel._plyvel.WriteBatch",      /*tp_name*/
 	sizeof(PyWriteBatch),             /*tp_basicsize*/
 	0,                                /*tp_itemsize*/
 	(destructor)PyWriteBatch_dealloc, /*tp_dealloc*/
@@ -1208,17 +1208,17 @@ PyTypeObject PyWriteBatch_Type = {
 	PyWriteBatch_new,                 /*tp_new */
 };
 
-PyTypeObject PyLevelDBSnapshot_Type = {
+PyTypeObject PlyvelSnapshot_Type = {
 #if PY_MAJOR_VERSION >= 3
 	PyVarObject_HEAD_INIT(NULL, 0)
 #else
 	PyObject_HEAD_INIT(NULL)
 	0,
 #endif
-	(char*)"leveldb.Snapshot",      /*tp_name*/
-	sizeof(PyLevelDBSnapshot),             /*tp_basicsize*/
+	(char*)"plyvel._plyvel.Snapshot",      /*tp_name*/
+	sizeof(PlyvelSnapshot),             /*tp_basicsize*/
 	0,                                /*tp_itemsize*/
-	(destructor)PyLevelDBSnapshot_dealloc, /*tp_dealloc*/
+	(destructor)PlyvelSnapshot_dealloc, /*tp_dealloc*/
 	0,                                /*tp_print*/
 	0,                                /*tp_getattr*/
 	0,                                /*tp_setattr*/
@@ -1234,14 +1234,14 @@ PyTypeObject PyLevelDBSnapshot_Type = {
 	0,                               /* tp_setattro */
 	0,                               /* tp_as_buffer */
 	Py_TPFLAGS_DEFAULT  | Py_TPFLAGS_HAVE_GC, /* tp_flags */
-	(char*)PyLevelDBSnapshot_doc,          /*tp_doc */
-	(traverseproc)PyLevelDBSnapshot_traverse,  /* tp_traverse */
+	(char*)PlyvelSnapshot_doc,          /*tp_doc */
+	(traverseproc)PlyvelSnapshot_traverse,  /* tp_traverse */
 	0,                                /*tp_clear */
 	0,                                /*tp_richcompare */
 	0,                                /*tp_weaklistoffset */
 	0,                                /*tp_iter */
 	0,                                /*tp_iternext */
-	PyLevelDBSnapshot_methods,             /*tp_methods */
+	PlyvelSnapshot_methods,             /*tp_methods */
 	0,                                /*tp_members */
 	0,                                /*tp_getset */
 	0,                                /*tp_base */
@@ -1249,12 +1249,12 @@ PyTypeObject PyLevelDBSnapshot_Type = {
 	0,                                /*tp_descr_get */
 	0,                                /*tp_descr_set */
 	0,                                /*tp_dictoffset */
-	(initproc)PyLevelDBSnapshot_init,      /*tp_init */
+	(initproc)PlyvelSnapshot_init,      /*tp_init */
 	0,                                /*tp_alloc */
-	PyLevelDBSnapshot_new,                 /*tp_new */
+	PlyvelSnapshot_new,                 /*tp_new */
 };
 
-static void PyLevelDBIter_clean(PyLevelDBIter* iter)
+static void PlyvelIter_clean(PlyvelIter* iter)
 {
 	if (iter->db)
 		iter->db->n_iterators -= 1;
@@ -1275,23 +1275,23 @@ static void PyLevelDBIter_clean(PyLevelDBIter* iter)
 	iter->include_value = 0;
 }
 
-static void PyLevelDBIter_dealloc(PyLevelDBIter* iter)
+static void PlyvelIter_dealloc(PlyvelIter* iter)
 {
-	PyLevelDBIter_clean(iter);
+	PlyvelIter_clean(iter);
 	PyObject_GC_Del(iter);
 }
 
-static int PyLevelDBIter_traverse(PyLevelDBIter* iter, visitproc visit, void* arg)
+static int PlyvelIter_traverse(PlyvelIter* iter, visitproc visit, void* arg)
 {
 	Py_VISIT((PyObject*)iter->ref);
 	return 0;
 }
 
-static PyObject* PyLevelDBIter_next(PyLevelDBIter* iter)
+static PyObject* PlyvelIter_next(PlyvelIter* iter)
 {
 	// empty, do cleanup (idempotent)
 	if (iter->ref == 0 || !iter->iterator->Valid()) {
-		PyLevelDBIter_clean(iter);
+		PlyvelIter_clean(iter);
 		return 0;
 	}
 
@@ -1302,10 +1302,10 @@ static PyObject* PyLevelDBIter_next(PyLevelDBIter* iter)
 		int c = iter->db->_options->comparator->Compare(a, b);
 
 		if (!iter->is_reverse && !(0 <= c)) {
-			PyLevelDBIter_clean(iter);
+			PlyvelIter_clean(iter);
 			return 0;
 		} else if (iter->is_reverse && !(0 >= c)) {
-			PyLevelDBIter_clean(iter);
+			PlyvelIter_clean(iter);
 			return 0;
 		}
 	}
@@ -1352,17 +1352,17 @@ static PyObject* PyLevelDBIter_next(PyLevelDBIter* iter)
 	return ret;
 }
 
-PyTypeObject PyLevelDBIter_Type = {
+PyTypeObject PlyvelIter_Type = {
 #if PY_MAJOR_VERSION >= 3
 	PyVarObject_HEAD_INIT(NULL, 0)
 #else
 	PyObject_HEAD_INIT(NULL)
 	0,
 #endif
-	(char*)"leveldb-iterator",       /* tp_name */
-	sizeof(PyLevelDBIter),             /* tp_basicsize */
+	(char*)"plyvel._plyvel.Iterator",       /* tp_name */
+	sizeof(PlyvelIter),             /* tp_basicsize */
 	0,                               /* tp_itemsize */
-	(destructor)PyLevelDBIter_dealloc, /* tp_dealloc */
+	(destructor)PlyvelIter_dealloc, /* tp_dealloc */
 	0,                               /* tp_print */
 	0,                               /* tp_getattr */
 	0,                               /* tp_setattr */
@@ -1379,19 +1379,19 @@ PyTypeObject PyLevelDBIter_Type = {
 	0,                               /* tp_as_buffer */
 	Py_TPFLAGS_DEFAULT  | Py_TPFLAGS_HAVE_GC, /* tp_flags */
 	0,                               /* tp_doc */
-	(traverseproc)PyLevelDBIter_traverse,  /* tp_traverse */
+	(traverseproc)PlyvelIter_traverse,  /* tp_traverse */
 	0,                               /* tp_clear */
 	0,                               /* tp_richcompare */
 	0,                               /* tp_weaklistoffset */
 	PyObject_SelfIter,               /* tp_iter */
-	(iternextfunc)PyLevelDBIter_next,  /* tp_iternext */
+	(iternextfunc)PlyvelIter_next,  /* tp_iternext */
 	0,                               /* tp_methods */
 	0,
 };
 
-static PyObject* PyLevelDBIter_New(PyObject* ref, PyLevelDB* db, leveldb::Iterator* iterator, std::string* bound, int include_value, int is_reverse)
+static PyObject* PlyvelIter_New(PyObject* ref, Plyvel* db, leveldb::Iterator* iterator, std::string* bound, int include_value, int is_reverse)
 {
-	PyLevelDBIter* iter = PyObject_GC_New(PyLevelDBIter, &PyLevelDBIter_Type);
+	PlyvelIter* iter = PyObject_GC_New(PlyvelIter, &PlyvelIter_Type);
 
 	if (iter == 0) {
 		Py_BEGIN_ALLOW_THREADS
@@ -1415,9 +1415,9 @@ static PyObject* PyLevelDBIter_New(PyObject* ref, PyLevelDB* db, leveldb::Iterat
 	return (PyObject*)iter;
 }
 
-static PyObject* PyLevelDBSnapshot_New(PyLevelDB* db, const leveldb::Snapshot* snapshot)
+static PyObject* PlyvelSnapshot_New(Plyvel* db, const leveldb::Snapshot* snapshot)
 {
-	PyLevelDBSnapshot* s = PyObject_GC_New(PyLevelDBSnapshot, &PyLevelDBSnapshot_Type);
+	PlyvelSnapshot* s = PyObject_GC_New(PlyvelSnapshot, &PlyvelSnapshot_Type);
 
 	if (s == 0) {
 		db->_db->ReleaseSnapshot(snapshot);
